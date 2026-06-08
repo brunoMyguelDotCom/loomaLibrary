@@ -42,7 +42,7 @@ export default function HomePage() {
     await fetch("/api/books/delete", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: book.url }),
+      body: JSON.stringify({ pathname: book.pathname }),
     })
     mutate()
   }

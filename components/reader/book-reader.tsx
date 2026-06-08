@@ -47,12 +47,14 @@ export function BookReader({
   const { bookmarks, toggleBookmark, isBookmarked } = useBookmarks(book.id)
 
   const flipRef = useRef<any>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [zoom, setZoom] = useState(1)
   const [fullscreen, setFullscreen] = useState(false)
   const [showThumbs, setShowThumbs] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [ready, setReady] = useState(false)
+  const [stage, setStage] = useState({ w: 0, h: 0 })
 
   const total = state.numPages
 
@@ -133,10 +135,43 @@ export function BookReader({
 
   const progressPct = total ? Math.round((currentPage / total) * 100) : 0
 
+  // Mede a área disponível e recalcula quando ela muda (responsivo)
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el) return
+    const measure = () => {
+      const rect = el.getBoundingClientRect()
+      setStage({ w: rect.width, h: rect.height })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [state.loading])
+
+  // Calcula a dimensão de UMA página mantendo a proporção do PDF.
+  // Em telas largas mostramos duas páginas (landscape), então a área útil
+  // por página é metade da largura disponível.
+  const pageSize = useMemo(() => {
+    const pad = 32
+    const availW = Math.max(260, stage.w - pad)
+    const availH = Math.max(360, stage.h - pad)
+    const aspect = state.aspect || 0.7 // largura/altura
+    const isWide = stage.w >= 820
+    // largura máxima de uma página
+    let pageW = isWide ? availW / 2 : availW
+    let pageH = pageW / aspect
+    if (pageH > availH) {
+      pageH = availH
+      pageW = pageH * aspect
+    }
+    return { w: Math.floor(pageW), h: Math.floor(pageH) }
+  }, [stage, state.aspect])
+
   return (
     <div
       id="looma-reader"
-      className="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-background to-secondary/40"
+      className="fixed inset-0 z-50 flex flex-col bg-background"
     >
       {/* Barra superior */}
       <header className="flex items-center justify-between gap-2 border-b border-border/50 bg-background/70 px-3 py-2.5 backdrop-blur-xl sm:px-4">
@@ -235,7 +270,10 @@ export function BookReader({
           />
         )}
 
-        <div className="relative flex flex-1 items-center justify-center overflow-auto p-3 sm:p-8">
+        <div
+          ref={stageRef}
+          className="relative flex flex-1 items-center justify-center overflow-hidden p-4 sm:p-8"
+        >
           {state.loading && (
             <div className="flex flex-col items-center gap-3 text-muted-foreground">
               <Loader2 className="size-8 animate-spin text-primary" />
@@ -248,21 +286,22 @@ export function BookReader({
             </p>
           )}
 
-          {!state.loading && !state.error && total > 0 && (
+          {!state.loading && !state.error && total > 0 && pageSize.w > 0 && (
             <div
               className="flip-book transition-transform duration-300"
               style={{ transform: `scale(${zoom})` }}
             >
               {/* @ts-expect-error -- react-pageflip não tem tipos completos */}
               <HTMLFlipBook
+                key={`${pageSize.w}x${pageSize.h}`}
                 ref={flipRef}
-                width={420}
-                height={Math.round(420 / state.aspect)}
-                size="stretch"
-                minWidth={260}
-                maxWidth={620}
-                minHeight={380}
-                maxHeight={900}
+                width={pageSize.w}
+                height={pageSize.h}
+                size="fixed"
+                minWidth={200}
+                maxWidth={900}
+                minHeight={300}
+                maxHeight={1400}
                 maxShadowOpacity={0.5}
                 drawShadow
                 flippingTime={750}
@@ -271,7 +310,6 @@ export function BookReader({
                 mobileScrollSupport
                 clickEventForward
                 swipeDistance={20}
-                usePortrait
                 startPage={0}
                 onInit={onInit}
                 onFlip={onFlip}
