@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect, useRef } from "react"
 import useSWR from "swr"
-import { BookOpen, Library, Search, X } from "lucide-react"
+import { BookOpen, Library, Search, X, LayoutGrid, List, BookMarked, Brain, Sparkles } from "lucide-react"
 import { LoomaLogo } from "@/components/looma-logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UploadButton } from "@/components/upload-button"
@@ -13,6 +13,39 @@ import type { Book } from "@/lib/books"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
+export type ViewMode = "grid" | "list"
+
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect() } },
+      { threshold: 0.15 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return { ref, visible }
+}
+
+function RevealSection({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const { ref, visible } = useScrollReveal()
+  return (
+    <div
+      ref={ref}
+      className={`scroll-reveal ${visible ? "scroll-reveal--visible" : ""} ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const { data, isLoading, mutate } = useSWR<{ books: Book[] }>(
     "/api/books",
@@ -21,15 +54,18 @@ export default function HomePage() {
   )
   const [query, setQuery] = useState("")
   const [active, setActive] = useState<Book | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>("grid")
+  const [sortBy, setSortBy] = useState<"name" | "recent">("name")
   const { getProgress, saveProgress } = useReadingProgress()
 
   const books = data?.books ?? []
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return books
-    return books.filter((b) => b.title.toLowerCase().includes(q))
-  }, [books, query])
+    const base = q ? books.filter((b) => b.title.toLowerCase().includes(q)) : books
+    if (sortBy === "name") return [...base].sort((a, b) => a.title.localeCompare(b.title))
+    return base
+  }, [books, query, sortBy])
 
   const getProgressPct = (book: Book) => {
     const p = getProgress(book.id)
@@ -62,13 +98,13 @@ export default function HomePage() {
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
             <div className="flex items-center gap-3 animate-slide-up-fade" style={{ animationDelay: '0ms' }}>
               <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
-                <LoomaLogo className="size-6 text-primary" />
+                <img src="/favicon.png" alt="LoomaLibrary logo" className="size-6 object-contain" />
               </div>
               <div className="leading-none">
-                <p className="font-heading text-[1.05rem] font-700 tracking-tight text-foreground">
+                <p className="font-heading text-[1.05rem] font-800 tracking-tight text-foreground">
                   LoomaLibrary
                 </p>
-                <p className="hidden text-[0.68rem] font-medium tracking-wide text-muted-foreground sm:block">
+                <p className="hidden text-[0.68rem] font-600 tracking-wide text-muted-foreground sm:block">
                   sua biblioteca de Psicologia
                 </p>
               </div>
@@ -83,63 +119,147 @@ export default function HomePage() {
           </div>
         </header>
 
-        {/* Hero / boas-vindas */}
-        <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 sm:pt-16">
-          <div className="flex flex-col items-start gap-5">
-            <span
-              className="hero-badge animate-badge-pop inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide text-primary/80"
+        {/* ─── HERO ──────────────────────────────────────────────── */}
+        <section className="hero-section relative overflow-hidden">
+          {/* Fundo hero gradiente */}
+          <div className="hero-bg" aria-hidden="true" />
+
+          {/* Favicon como fundo decorativo com blur e baixa opacidade */}
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            aria-hidden="true"
+          >
+            <img
+              src="/favicon.png"
+              alt=""
+              className="w-[420px] max-w-[70vw] object-contain"
+              style={{ opacity: 0.2, filter: 'blur(6px)' }}
+            />
+          </div>
+
+          <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 md:py-36 text-center">
+            {/* Badge */}
+            <div
+              className="hero-badge animate-badge-pop inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-700 tracking-wide text-primary/80 mb-6"
               style={{ animationDelay: '80ms' }}
             >
               <Library className="size-3.5 text-primary" />
               Leitura, mente e desenvolvimento humano
-            </span>
+            </div>
+
+            {/* Título principal */}
             <h1
-              className="animate-slide-up-fade text-balance font-heading text-3xl font-800 leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-5xl"
+              className="animate-slide-up-fade font-heading text-4xl font-900 leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl mb-6"
               style={{ animationDelay: '130ms' }}
             >
-              Bem-vindo à sua<br className="hidden sm:block" />
-              <span className="text-primary"> estante digital</span>
+              Sua biblioteca<br />
+              <span className="text-gradient">de Psicologia</span>
             </h1>
-            <p
-              className="animate-slide-up-fade max-w-xl text-pretty text-base leading-relaxed text-muted-foreground"
-              style={{ animationDelay: '190ms' }}
-            >
-              Um cantinho tranquilo para guardar e folhear seus livros. Escolha um
-              título e mergulhe — cada PDF se transforma em um livro que você vira
-              página por página.
-            </p>
-          </div>
 
-          {/* Pesquisa */}
-          <div
-            className="animate-slide-up-fade mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-            style={{ animationDelay: '240ms' }}
-          >
-            <div className="relative w-full max-w-md">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Pesquisar livros…"
-                className="search-input w-full rounded-full py-2.5 pl-10 pr-10 text-sm outline-none"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  aria-label="Limpar pesquisa"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
-            <p className="text-sm font-medium text-muted-foreground">
-              {books.length > 0 &&
-                `${filtered.length} de ${books.length} livro${books.length > 1 ? "s" : ""}`}
+            {/* Subtítulo */}
+            <p
+              className="animate-slide-up-fade mx-auto max-w-2xl text-pretty text-lg font-500 leading-relaxed text-muted-foreground mb-10"
+              style={{ animationDelay: '200ms' }}
+            >
+              Um cantinho tranquilo para guardar e folhear seus livros.
+              Cada PDF se transforma em um livro que você vira página por página.
             </p>
+
+            {/* Stats herói */}
+            <div
+              className="animate-slide-up-fade flex flex-wrap justify-center gap-8 mb-12"
+              style={{ animationDelay: '260ms' }}
+            >
+              {[
+                { icon: BookMarked, label: "Livros salvos", value: books.length > 0 ? books.length : "—" },
+                { icon: Brain, label: "Leitura focada", value: "PDF" },
+                { icon: Sparkles, label: "Gratuito", value: "100%" },
+              ].map(({ icon: Icon, label, value }) => (
+                <div key={label} className="hero-stat flex flex-col items-center gap-1">
+                  <Icon className="size-5 text-primary mb-1" />
+                  <span className="text-2xl font-800 text-foreground">{value}</span>
+                  <span className="text-xs font-600 tracking-wide text-muted-foreground uppercase">{label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Scroll cue */}
+            <div className="animate-bounce-slow flex justify-center" style={{ animationDelay: '500ms' }}>
+              <div className="scroll-cue flex flex-col items-center gap-1.5 text-muted-foreground/50">
+                <span className="text-[0.65rem] font-600 tracking-widest uppercase">Ver coleção</span>
+                <div className="scroll-cue-line" />
+              </div>
+            </div>
           </div>
+        </section>
+
+        {/* ─── BARRA DE CONTROLES ─────────────────────────────────── */}
+        <section className="mx-auto max-w-7xl px-4 pt-14 sm:px-6">
+          <RevealSection delay={0} className="mb-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* Pesquisa */}
+              <div className="relative w-full max-w-md">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Pesquisar livros…"
+                  className="search-input w-full rounded-full py-2.5 pl-10 pr-10 text-sm font-500 outline-none"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Limpar pesquisa"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Controles direita */}
+              <div className="flex items-center gap-3">
+                {/* Ordenação */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as "name" | "recent")}
+                  className="sort-select rounded-full px-3 py-2 text-xs font-600 outline-none cursor-pointer"
+                >
+                  <option value="name">A → Z</option>
+                  <option value="recent">Recentes</option>
+                </select>
+
+                {/* Toggle grid/list */}
+                <div className="view-toggle flex rounded-full p-1 gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    aria-label="Visualizar em grade"
+                    className={`view-toggle-btn ${viewMode === "grid" ? "view-toggle-btn--active" : ""}`}
+                  >
+                    <LayoutGrid className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    aria-label="Visualizar em lista"
+                    className={`view-toggle-btn ${viewMode === "list" ? "view-toggle-btn--active" : ""}`}
+                  >
+                    <List className="size-3.5" />
+                  </button>
+                </div>
+
+                {/* Contagem */}
+                {books.length > 0 && (
+                  <p className="text-sm font-600 text-muted-foreground whitespace-nowrap">
+                    {filtered.length} de {books.length} livro{books.length > 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+            </div>
+          </RevealSection>
 
           {/* Upload no mobile */}
           <div className="mt-4 sm:hidden">
@@ -147,16 +267,17 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Conteúdo da estante */}
-        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
+        {/* ─── CONTEÚDO DA ESTANTE ────────────────────────────────── */}
+        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 pb-20">
           {isLoading ? (
-            <ShelfSkeleton />
+            <ShelfSkeleton viewMode={viewMode} />
           ) : filtered.length > 0 ? (
             <Shelf
               books={filtered}
               getProgressPct={getProgressPct}
               onOpen={setActive}
               onDelete={handleDelete}
+              viewMode={viewMode}
             />
           ) : (
             <EmptyState hasBooks={books.length > 0} />
@@ -178,7 +299,16 @@ export default function HomePage() {
   )
 }
 
-function ShelfSkeleton() {
+function ShelfSkeleton({ viewMode }: { viewMode: ViewMode }) {
+  if (viewMode === "list") {
+    return (
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="animate-shimmer h-16 w-full rounded-2xl" style={{ animationDelay: `${i * 40}ms` }} />
+        ))}
+      </div>
+    )
+  }
   return (
     <div className="grid grid-cols-2 gap-x-5 gap-y-12 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       {Array.from({ length: 12 }).map((_, i) => (
@@ -198,10 +328,10 @@ function EmptyState({ hasBooks }: { hasBooks: boolean }) {
         <BookOpen className="size-8" />
       </div>
       <div className="max-w-sm space-y-2">
-        <h2 className="font-heading text-xl font-700">
+        <h2 className="font-heading text-xl font-800 text-center">
           {hasBooks ? "Nenhum livro encontrado" : "Sua estante está vazia"}
         </h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">
+        <p className="text-sm font-500 leading-relaxed text-muted-foreground text-center">
           {hasBooks
             ? "Tente pesquisar por outro título."
             : "Adicione seus PDFs e eles aparecerão aqui como livros prontos para folhear."}

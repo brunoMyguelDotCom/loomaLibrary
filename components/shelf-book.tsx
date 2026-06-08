@@ -2,19 +2,81 @@
 
 import { BookCover } from "@/components/book-cover"
 import type { Book } from "@/lib/books"
-import { Trash2 } from "lucide-react"
+import type { ViewMode } from "@/app/page"
+import { Trash2, BookOpen } from "lucide-react"
 
 export function ShelfBook({
   book,
   progressPct,
   onOpen,
   onDelete,
+  viewMode = "grid",
 }: {
   book: Book
   progressPct?: number
   onOpen: (book: Book) => void
   onDelete?: (book: Book) => void
+  viewMode?: ViewMode
 }) {
+  if (viewMode === "list") {
+    return (
+      <div className="list-book-card group flex items-center gap-4 rounded-2xl px-4 py-3.5 cursor-pointer transition-all duration-200 hover:shadow-md"
+        onClick={() => onOpen(book)}
+        role="button"
+        tabIndex={0}
+        aria-label={`Abrir ${book.title}`}
+        onKeyDown={(e) => e.key === "Enter" && onOpen(book)}
+      >
+        {/* Mini capa */}
+        <div className="relative aspect-[2/3] w-10 shrink-0 overflow-hidden rounded shadow-md ring-1 ring-black/10">
+          <BookCover book={book} />
+          <span className="book-spine pointer-events-none absolute inset-0" />
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-sm font-700 leading-snug text-foreground truncate">{book.title}</p>
+          {typeof progressPct === "number" && progressPct > 0 && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <div className="h-1 flex-1 rounded-full bg-muted overflow-hidden max-w-[120px]">
+                <div
+                  className="h-full bg-primary transition-all duration-700"
+                  style={{ width: `${Math.min(100, progressPct)}%` }}
+                />
+              </div>
+              <span className="text-[0.65rem] font-600 text-primary/70">
+                {progressPct >= 100 ? "✓ Concluído" : `${Math.round(progressPct)}%`}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Ações */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpen(book) }}
+            className="list-action-btn"
+            aria-label={`Abrir ${book.title}`}
+          >
+            <BookOpen className="size-3.5" />
+          </button>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(book) }}
+              aria-label={`Remover ${book.title}`}
+              className="list-action-btn list-action-btn--danger"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // GRID view (original aprimorado)
   return (
     <div className="group relative flex flex-col items-center">
       <button
@@ -62,11 +124,11 @@ export function ShelfBook({
         </button>
       )}
 
-      <p className="mt-3.5 line-clamp-2 max-w-[160px] text-center text-[0.8rem] font-semibold leading-snug text-foreground/85 transition-colors duration-200 group-hover:text-foreground">
+      <p className="mt-3.5 line-clamp-2 max-w-[160px] text-center text-[0.8rem] font-700 leading-snug text-foreground/85 transition-colors duration-200 group-hover:text-foreground">
         {book.title}
       </p>
       {typeof progressPct === "number" && progressPct > 0 && (
-        <p className="mt-0.5 text-[0.7rem] font-medium text-primary/70">
+        <p className="mt-0.5 text-[0.7rem] font-600 text-primary/70">
           {progressPct >= 100 ? "✓ Concluído" : `${Math.round(progressPct)}% lido`}
         </p>
       )}

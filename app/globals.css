@@ -415,3 +415,245 @@
 .animate-icon-pulse {
   animation: icon-pulse 2.8s ease-in-out infinite;
 }
+
+/* ──────────────────────────────────────────────────────────────
+   HERO SECTION
+────────────────────────────────────────────────────────────── */
+.hero-section {
+  position: relative;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 60% at 50% -10%,
+    oklch(0.75 0.10 230 / 0.18) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+.dark .hero-bg {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% -10%,
+    oklch(0.40 0.12 240 / 0.22) 0%,
+    transparent 70%
+  );
+}
+
+/* ─── Gradiente de texto ─── */
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    oklch(0.42 0.12 240),
+    oklch(0.55 0.18 210),
+    oklch(0.48 0.16 255)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dark .text-gradient {
+  background: linear-gradient(
+    135deg,
+    oklch(0.72 0.16 218),
+    oklch(0.80 0.14 200),
+    oklch(0.68 0.18 240)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ─── Hero stats ─── */
+.hero-stat {
+  padding: 1rem 1.5rem;
+  border-radius: 1.25rem;
+  background: oklch(1 0.006 220 / 0.6);
+  border: 1px solid oklch(0.87 0.022 232 / 0.6);
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.hero-stat:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px oklch(0.42 0.12 240 / 0.12);
+}
+.dark .hero-stat {
+  background: oklch(0.21 0.040 248 / 0.6);
+  border-color: oklch(0.30 0.048 247 / 0.5);
+}
+
+/* ─── Scroll cue ─── */
+.scroll-cue-line {
+  width: 1.5px;
+  height: 2.5rem;
+  background: linear-gradient(
+    to bottom,
+    oklch(0.50 0.04 238 / 0.5),
+    transparent
+  );
+  animation: scroll-line-fade 2s ease-in-out infinite;
+}
+@keyframes scroll-line-fade {
+  0%, 100% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 0.8; transform: scaleY(1.1); }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
+.animate-bounce-slow {
+  animation: bounce-slow 2.2s ease-in-out infinite;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   SCROLL REVEAL — fadeIn + blur
+────────────────────────────────────────────────────────────── */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  filter: blur(6px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scroll-reveal--visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   VIEW TOGGLE (grid / list)
+────────────────────────────────────────────────────────────── */
+.view-toggle {
+  background: oklch(0.93 0.018 228 / 0.8);
+  border: 1px solid oklch(0.84 0.03 232 / 0.7);
+  backdrop-filter: blur(8px);
+}
+.dark .view-toggle {
+  background: oklch(0.24 0.040 248 / 0.8);
+  border-color: oklch(0.34 0.06 246 / 0.6);
+}
+
+.view-toggle-btn {
+  display: grid;
+  place-items: center;
+  padding: 0.4rem 0.6rem;
+  border-radius: 9999px;
+  color: oklch(0.50 0.04 238);
+  transition: all 0.2s;
+}
+.view-toggle-btn:hover {
+  color: oklch(0.42 0.12 240);
+  background: oklch(0.88 0.025 228 / 0.7);
+}
+.view-toggle-btn--active {
+  background: oklch(0.42 0.12 240);
+  color: oklch(0.99 0.005 220);
+  box-shadow: 0 2px 8px oklch(0.42 0.12 240 / 0.35);
+}
+.view-toggle-btn--active:hover {
+  background: oklch(0.42 0.12 240);
+  color: oklch(0.99 0.005 220);
+}
+.dark .view-toggle-btn {
+  color: oklch(0.65 0.035 228);
+}
+.dark .view-toggle-btn--active {
+  background: oklch(0.65 0.14 218);
+  color: oklch(0.16 0.035 250);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   SORT SELECT
+────────────────────────────────────────────────────────────── */
+.sort-select {
+  background: oklch(0.93 0.018 228 / 0.8);
+  border: 1.5px solid oklch(0.84 0.03 232 / 0.8);
+  color: oklch(0.42 0.08 242);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+.sort-select:focus {
+  border-color: oklch(0.52 0.14 238 / 0.7);
+  box-shadow: 0 0 0 3px oklch(0.52 0.14 238 / 0.12);
+}
+.dark .sort-select {
+  background-color: oklch(0.22 0.040 248 / 0.8);
+  border-color: oklch(0.34 0.06 246 / 0.7);
+  color: oklch(0.80 0.025 230);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   LIST VIEW CARD
+────────────────────────────────────────────────────────────── */
+.list-book-card {
+  background: oklch(1 0.006 220 / 0.55);
+  border: 1px solid oklch(0.87 0.022 232 / 0.6);
+  backdrop-filter: blur(10px);
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.list-book-card:hover {
+  background: oklch(1 0.006 220 / 0.82);
+  border-color: oklch(0.72 0.10 232 / 0.5);
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px oklch(0.42 0.12 240 / 0.10);
+}
+.dark .list-book-card {
+  background: oklch(0.21 0.040 248 / 0.55);
+  border-color: oklch(0.30 0.048 247 / 0.5);
+}
+.dark .list-book-card:hover {
+  background: oklch(0.24 0.040 248 / 0.8);
+  border-color: oklch(0.45 0.10 240 / 0.5);
+}
+
+.list-action-btn {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 9999px;
+  color: oklch(0.50 0.04 238);
+  background: oklch(0.93 0.018 228 / 0.7);
+  border: 1px solid oklch(0.84 0.03 232 / 0.5);
+  transition: all 0.18s;
+}
+.list-action-btn:hover {
+  background: oklch(0.88 0.04 230);
+  color: oklch(0.42 0.12 240);
+  transform: scale(1.08);
+}
+.list-action-btn--danger:hover {
+  background: oklch(0.95 0.02 20);
+  color: oklch(0.577 0.18 27);
+}
+.dark .list-action-btn {
+  background: oklch(0.27 0.048 247 / 0.7);
+  border-color: oklch(0.34 0.06 246 / 0.5);
+  color: oklch(0.65 0.035 228);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   FONT WEIGHT BOOSTS — fonte mais pesada globalmente
+────────────────────────────────────────────────────────────── */
+body {
+  font-weight: 500;
+}
+
+p {
+  font-weight: 500;
+}
+
+.font-500 { font-weight: 500; }
+.font-600 { font-weight: 600; }
+.font-700 { font-weight: 700; }
+.font-800 { font-weight: 800; }
+.font-900 { font-weight: 900; }
