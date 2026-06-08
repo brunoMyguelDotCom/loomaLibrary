@@ -2,7 +2,6 @@
 
 import type { PDFDocumentProxy } from "pdfjs-dist"
 
-// Carrega o pdfjs-dist apenas no cliente e configura o worker uma única vez.
 let pdfjsLib: typeof import("pdfjs-dist") | null = null
 
 export async function getPdfjs() {
@@ -35,16 +34,13 @@ function isMobile(): boolean {
   return window.innerWidth < 820 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
 }
 
-/** Canvas único reutilizável para evitar alocações repetidas. */
-let sharedCanvas: HTMLCanvasElement | null = null
-function getCanvas(): HTMLCanvasElement {
-  if (!sharedCanvas) sharedCanvas = document.createElement("canvas")
-  return sharedCanvas
-}
-
 /**
  * Renderiza uma página do PDF em canvas e retorna um data URL (JPEG).
- * Em mobile usa escala menor e qualidade JPEG para economizar memória e CPU.
+ * Em mobile usa escala menor para economizar memória e CPU.
+ *
+ * ⚠️  NÃO usar canvas compartilhado aqui — no desktop MAX_CONCURRENT=2
+ * faz dois renders rodarem em paralelo; um canvas único corromperia ambos.
+ * Cada chamada cria seu próprio canvas (descartado após toDataURL).
  */
 export async function renderPageToDataUrl(
   doc: PDFDocumentProxy,
@@ -52,29 +48,26 @@ export async function renderPageToDataUrl(
   scale = 1.5,
 ): Promise<{ dataUrl: string; width: number; height: number }> {
   const mobile = isMobile()
-
-  // Em mobile: reduz a escala para diminuir o tamanho do canvas em memória.
   const effectiveScale = mobile ? Math.min(scale, 1.0) : scale
 
   const page = await doc.getPage(pageNumber)
   const viewport = page.getViewport({ scale: effectiveScale })
 
-  const canvas = getCanvas()
-  const context = canvas.getContext("2d", {
-    // Desativa alpha: economiza ~25% de memória e acelera compositing.
-    alpha: false,
-    // Sugere ao browser priorizar velocidade sobre fidelidade de cores.
-    colorSpace: "srgb",
-  })!
-
+  const canvas = document.createElement("canvas")
   canvas.width = Math.floor(viewport.width)
   canvas.height = Math.floor(viewport.height)
 
+  // Sem { alpha: false } — evita incompatibilidade com Safari/WebKit
+  const context = canvas.getContext("2d")!
+
+  // Fundo branco obrigatório antes do render.
+  // JPEG não tem canal alpha — sem isso pixels transparentes do PDF viram preto.
+  context.fillStyle = "#ffffff"
+  context.fillRect(0, 0, canvas.width, canvas.height)
+
   await page.render({ canvasContext: context, viewport }).promise
 
-  // JPEG é ~3-5x menor que PNG para conteúdo de livro (texto + imagens).
-  // Qualidade 0.82 é imperceptível para leitura e drasticamente mais leve.
-  const quality = mobile ? 0.72 : 0.82
+  const quality = mobile ? 0.75 : 0.85
   const dataUrl = canvas.toDataURL("image/jpeg", quality)
 
   page.cleanup()
