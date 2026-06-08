@@ -110,7 +110,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 animate-slide-up-fade" style={{ animationDelay: '60ms' }}>
+            <div className="flex items-center gap-2 sm:gap-3 animate-slide-up-fade" style={{ animationDelay: '180ms' }}>
               <div className="hidden sm:block">
                 <UploadButton onUploaded={() => mutate()} />
               </div>
@@ -141,7 +141,7 @@ export default function HomePage() {
             {/* Badge */}
             <div
               className="hero-badge animate-badge-pop inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-700 tracking-wide text-primary/80 mb-6"
-              style={{ animationDelay: '80ms' }}
+              style={{ animationDelay: '250ms' }}
             >
               <Library className="size-3.5 text-primary" />
               Leitura, mente e desenvolvimento humano
@@ -150,7 +150,7 @@ export default function HomePage() {
             {/* Título principal */}
             <h1
               className="animate-slide-up-fade font-heading text-4xl font-900 leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl mb-6"
-              style={{ animationDelay: '130ms' }}
+              style={{ animationDelay: '420ms' }}
             >
               Sua biblioteca<br />
               <span className="text-gradient">de Psicologia</span>
@@ -159,7 +159,7 @@ export default function HomePage() {
             {/* Subtítulo */}
             <p
               className="animate-slide-up-fade mx-auto max-w-2xl text-pretty text-lg font-500 leading-relaxed text-muted-foreground mb-10"
-              style={{ animationDelay: '200ms' }}
+              style={{ animationDelay: '620ms' }}
             >
               Um cantinho tranquilo para guardar e folhear seus livros.
               Cada PDF se transforma em um livro que você vira página por página.
@@ -168,7 +168,7 @@ export default function HomePage() {
             {/* Stats herói */}
             <div
               className="animate-slide-up-fade flex flex-wrap justify-center gap-8 mb-12"
-              style={{ animationDelay: '260ms' }}
+              style={{ animationDelay: '820ms' }}
             >
               {[
                 { icon: BookMarked, label: "Livros salvos", value: books.length > 0 ? books.length : "—" },
@@ -184,7 +184,7 @@ export default function HomePage() {
             </div>
 
             {/* Scroll cue */}
-            <div className="animate-bounce-slow flex justify-center" style={{ animationDelay: '500ms' }}>
+            <div className="animate-bounce-slow flex justify-center" style={{ animationDelay: '1100ms' }}>
               <div className="scroll-cue flex flex-col items-center gap-1.5 text-muted-foreground/50">
                 <span className="text-[0.65rem] font-600 tracking-widest uppercase">Ver coleção</span>
                 <div className="scroll-cue-line" />
