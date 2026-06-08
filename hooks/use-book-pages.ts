@@ -12,14 +12,21 @@ export type BookState = {
   aspect: number
 }
 
+/** Máximo de renders simultâneos — evita travar o thread principal em mobile. */
+const MAX_CONCURRENT = typeof window !== "undefined" && window.innerWidth < 820 ? 1 : 2
+
 /**
- * Carrega o PDF e renderiza páginas sob demanda em imagens, com cache.
- * Retorna utilitários para o leitor flipbook.
+ * Carrega o PDF e renderiza páginas sob demanda com:
+ * - concorrência limitada (MAX_CONCURRENT) para não travar o main thread
+ * - fila de prioridade (página atual primeiro)
+ * - escala adaptativa mobile/desktop via lib/pdf.ts
  */
 export function useBookPages(url: string, scale = 1.5) {
   const docRef = useRef<PDFDocumentProxy | null>(null)
   const cache = useRef<Map<number, string>>(new Map())
-  const pending = useRef<Map<number, Promise<string>>>(new Map())
+  const pending = useRef<Set<number>>(new Set())
+  const queue = useRef<number[]>([])
+  const activeCount = useRef(0)
   const textCache = useRef<Map<number, string>>(new Map())
 
   const [state, setState] = useState<BookState>({
@@ -28,7 +35,6 @@ export function useBookPages(url: string, scale = 1.5) {
     numPages: 0,
     aspect: 0.66,
   })
-  // contador para forçar re-render quando uma página termina
   const [, force] = useState(0)
 
   useEffect(() => {
@@ -36,33 +42,23 @@ export function useBookPages(url: string, scale = 1.5) {
     setState((s) => ({ ...s, loading: true, error: null }))
     cache.current.clear()
     pending.current.clear()
+    queue.current = []
+    activeCount.current = 0
     textCache.current.clear()
     ;(async () => {
       try {
         const { doc, numPages } = await loadPdf(url)
-        if (cancelled) {
-          doc.destroy()
-          return
-        }
+        if (cancelled) { doc.destroy(); return }
         docRef.current = doc
         const first = await doc.getPage(1)
         const vp = first.getViewport({ scale: 1 })
         first.cleanup()
         if (cancelled) return
-        setState({
-          loading: false,
-          error: null,
-          numPages,
-          aspect: vp.width / vp.height,
-        })
+        setState({ loading: false, error: null, numPages, aspect: vp.width / vp.height })
       } catch (e) {
-        console.error("[v0] Erro ao carregar livro:", e)
+        console.error("[looma] Erro ao carregar livro:", e)
         if (!cancelled)
-          setState((s) => ({
-            ...s,
-            loading: false,
-            error: "Não foi possível abrir este livro.",
-          }))
+          setState((s) => ({ ...s, loading: false, error: "Não foi possível abrir este livro." }))
       }
     })()
     return () => {
@@ -71,6 +67,32 @@ export function useBookPages(url: string, scale = 1.5) {
       docRef.current = null
     }
   }, [url])
+
+  /** Processa o próximo item da fila respeitando o limite de concorrência. */
+  const processQueue = useCallback(() => {
+    const doc = docRef.current
+    if (!doc || activeCount.current >= MAX_CONCURRENT || queue.current.length === 0) return
+    const pageNumber = queue.current.shift()!
+    if (cache.current.has(pageNumber) || !pending.current.has(pageNumber)) {
+      processQueue()
+      return
+    }
+    activeCount.current++
+    renderPageToDataUrl(doc, pageNumber, scale)
+      .then(({ dataUrl }) => {
+        cache.current.set(pageNumber, dataUrl)
+        pending.current.delete(pageNumber)
+        force((n) => n + 1)
+      })
+      .catch((e) => {
+        console.error("[looma] Erro ao renderizar página", pageNumber, e)
+        pending.current.delete(pageNumber)
+      })
+      .finally(() => {
+        activeCount.current--
+        processQueue()
+      })
+  }, [scale])
 
   const getPage = useCallback(
     (pageNumber: number): string | null => {
@@ -81,22 +103,13 @@ export function useBookPages(url: string, scale = 1.5) {
       if (!doc || pageNumber > doc.numPages) return null
       if (pending.current.has(pageNumber)) return null
 
-      const p = renderPageToDataUrl(doc, pageNumber, scale)
-        .then(({ dataUrl }) => {
-          cache.current.set(pageNumber, dataUrl)
-          pending.current.delete(pageNumber)
-          force((n) => n + 1)
-          return dataUrl
-        })
-        .catch((e) => {
-          console.error("[v0] Erro ao renderizar página", pageNumber, e)
-          pending.current.delete(pageNumber)
-          return ""
-        })
-      pending.current.set(pageNumber, p)
+      // Enfileira com prioridade (coloca na frente da fila).
+      pending.current.add(pageNumber)
+      queue.current.unshift(pageNumber)
+      processQueue()
       return null
     },
-    [scale],
+    [processQueue],
   )
 
   const searchText = useCallback(

@@ -21,7 +21,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react"
-import { FlipCover, FlipPage } from "@/components/reader/flip-page"
+import { FlipPage, FlipCover } from "@/components/reader/flip-page"
 import { ThumbnailRail } from "@/components/reader/thumbnail-rail"
 import { SearchPanel } from "@/components/reader/search-panel"
 import { useBookPages } from "@/hooks/use-book-pages"
@@ -29,6 +29,22 @@ import { useBookmarks } from "@/hooks/use-reading"
 import type { Book } from "@/lib/books"
 
 const HTMLFlipBook = dynamic(() => import("react-pageflip"), { ssr: false })
+
+/** Detecta dispositivos com pouca capacidade de renderização. */
+function useMobileDetect() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () =>
+      setIsMobile(
+        window.innerWidth < 820 ||
+          /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent),
+      )
+    check()
+    window.addEventListener("resize", check, { passive: true })
+    return () => window.removeEventListener("resize", check)
+  }, [])
+  return isMobile
+}
 
 export function BookReader({
   book,
@@ -45,6 +61,7 @@ export function BookReader({
 }) {
   const { state, getPage, searchText } = useBookPages(book.url)
   const { bookmarks, toggleBookmark, isBookmarked } = useBookmarks(book.id)
+  const isMobile = useMobileDetect()
 
   const flipRef = useRef<any>(null)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -58,16 +75,12 @@ export function BookReader({
 
   const total = state.numPages
 
-  // Bloqueia o scroll do body enquanto o leitor está aberto
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = prev
-    }
+    return () => { document.body.style.overflow = prev }
   }, [])
 
-  // Fecha com ESC, navega com setas
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") handleClose()
@@ -85,7 +98,6 @@ export function BookReader({
     onCloseUI()
   }, [currentPage, total, onProgress, onClose, onCloseUI])
 
-  // Vai para a última página lida quando o livro estiver pronto
   const onInit = useCallback(() => {
     setReady(true)
     if (initialPage > 1) {
@@ -125,7 +137,6 @@ export function BookReader({
     return () => document.removeEventListener("fullscreenchange", onFs)
   }, [])
 
-  // Monta a lista de páginas para o flipbook
   const pages = useMemo(() => {
     if (!total) return []
     const arr: number[] = []
@@ -135,7 +146,6 @@ export function BookReader({
 
   const progressPct = total ? Math.round((currentPage / total) * 100) : 0
 
-  // Mede a área disponível e recalcula quando ela muda (responsivo)
   useEffect(() => {
     const el = stageRef.current
     if (!el) return
@@ -149,16 +159,12 @@ export function BookReader({
     return () => ro.disconnect()
   }, [state.loading])
 
-  // Calcula a dimensão de UMA página mantendo a proporção do PDF.
-  // Em telas largas mostramos duas páginas (landscape), então a área útil
-  // por página é metade da largura disponível.
   const pageSize = useMemo(() => {
     const pad = 32
     const availW = Math.max(260, stage.w - pad)
     const availH = Math.max(360, stage.h - pad)
-    const aspect = state.aspect || 0.7 // largura/altura
+    const aspect = state.aspect || 0.7
     const isWide = stage.w >= 820
-    // largura máxima de uma página
     let pageW = isWide ? availW / 2 : availW
     let pageH = pageW / aspect
     if (pageH > availH) {
@@ -167,6 +173,17 @@ export function BookReader({
     }
     return { w: Math.floor(pageW), h: Math.floor(pageH) }
   }, [stage, state.aspect])
+
+  // Configurações adaptativas para mobile vs desktop
+  // Mobile: animação mais rápida, sem sombras pesadas, swipe mais sensível
+  const flipConfig = useMemo(() => ({
+    flippingTime: isMobile ? 400 : 700,      // mobile: 400ms vs 700ms
+    drawShadow: !isMobile,                    // mobile: sem sombra 3D (cálculo pesado)
+    maxShadowOpacity: isMobile ? 0 : 0.4,
+    useMouseEvents: !isMobile,               // mobile usa touch events, não mouse
+    swipeDistance: isMobile ? 10 : 30,       // mobile: mais sensível ao swipe
+    mobileScrollSupport: true,
+  }), [isMobile])
 
   return (
     <div
@@ -192,20 +209,14 @@ export function BookReader({
         <div className="flex items-center gap-1 sm:gap-1.5">
           <ToolbarButton
             label="Pesquisar no livro"
-            onClick={() => {
-              setShowSearch((v) => !v)
-              setShowThumbs(false)
-            }}
+            onClick={() => { setShowSearch((v) => !v); setShowThumbs(false) }}
             active={showSearch}
           >
             <Search className="size-[18px]" />
           </ToolbarButton>
           <ToolbarButton
             label="Miniaturas"
-            onClick={() => {
-              setShowThumbs((v) => !v)
-              setShowSearch(false)
-            }}
+            onClick={() => { setShowThumbs((v) => !v); setShowSearch(false) }}
             active={showThumbs}
           >
             <Rows3 className="size-[18px]" />
@@ -254,19 +265,13 @@ export function BookReader({
             current={currentPage}
             bookmarks={bookmarks}
             getPage={getPage}
-            onSelect={(p) => {
-              goTo(p)
-              setShowThumbs(false)
-            }}
+            onSelect={(p) => { goTo(p); setShowThumbs(false) }}
           />
         )}
         {showSearch && (
           <SearchPanel
             searchText={searchText}
-            onSelect={(p) => {
-              goTo(p)
-              setShowSearch(false)
-            }}
+            onSelect={(p) => { goTo(p); setShowSearch(false) }}
           />
         )}
 
@@ -302,14 +307,14 @@ export function BookReader({
                 maxWidth={900}
                 minHeight={300}
                 maxHeight={1400}
-                maxShadowOpacity={0.5}
-                drawShadow
-                flippingTime={750}
+                flippingTime={flipConfig.flippingTime}
+                drawShadow={flipConfig.drawShadow}
+                maxShadowOpacity={flipConfig.maxShadowOpacity}
+                useMouseEvents={flipConfig.useMouseEvents}
+                swipeDistance={flipConfig.swipeDistance}
+                mobileScrollSupport={flipConfig.mobileScrollSupport}
                 showCover
-                useMouseEvents
-                mobileScrollSupport
                 clickEventForward
-                swipeDistance={20}
                 startPage={0}
                 onInit={onInit}
                 onFlip={onFlip}
