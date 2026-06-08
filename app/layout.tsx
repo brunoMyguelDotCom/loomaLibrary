@@ -1,18 +1,21 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Fraunces, Inter } from 'next/font/google'
+import { DM_Sans, Plus_Jakarta_Sans } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
-const inter = Inter({
+const dmSans = DM_Sans({
   variable: '--font-sans',
   subsets: ['latin'],
   display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
 })
-const fraunces = Fraunces({
+
+const plusJakarta = Plus_Jakarta_Sans({
   variable: '--font-heading',
   subsets: ['latin'],
   display: 'swap',
+  weight: ['500', '600', '700', '800'],
 })
 
 export const metadata: Metadata = {
@@ -55,7 +58,7 @@ export default function RootLayout({
     <html
       lang="pt-BR"
       suppressHydrationWarning
-      className={`${inter.variable} ${fraunces.variable} bg-background`}
+      className={`${dmSans.variable} ${plusJakarta.variable} bg-background`}
     >
       <body className="font-sans antialiased">
         <ThemeProvider>{children}</ThemeProvider>

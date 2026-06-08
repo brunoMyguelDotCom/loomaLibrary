@@ -14,15 +14,23 @@ export function Shelf({
   onOpen: (book: Book) => void
   onDelete: (book: Book) => void
 }) {
-  // Agrupa os livros em prateleiras de tamanho responsivo via CSS grid
   return (
     <div className="relative">
-      <div className="grid grid-cols-2 gap-x-5 gap-y-12 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      {/* Separador decorativo acima da estante */}
+      <div className="mb-10 flex items-center gap-4">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+        <span className="text-[0.7rem] font-semibold tracking-[0.15em] uppercase text-muted-foreground/60">
+          sua coleção
+        </span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-5 gap-y-14 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {books.map((book, i) => (
           <div
             key={book.id}
             className="animate-float-in"
-            style={{ animationDelay: `${Math.min(i, 12) * 50}ms` }}
+            style={{ animationDelay: `${Math.min(i, 14) * 45}ms` }}
           >
             <ShelfBook
               book={book}

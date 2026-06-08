@@ -56,7 +56,7 @@ export function UploadButton({ onUploaded }: { onUploaded: () => void }) {
         type="button"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
-        className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:brightness-110 disabled:opacity-60"
+        className="btn-primary-glow inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:brightness-110 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {busy ? (
           <Loader2 className="size-4 animate-spin" />
@@ -66,8 +66,8 @@ export function UploadButton({ onUploaded }: { onUploaded: () => void }) {
         Adicionar livro
       </button>
       {status && (
-        <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:inline-flex">
-          <UploadCloud className="size-3.5" />
+        <span className="hidden animate-slide-up-fade items-center gap-1.5 text-xs font-medium text-muted-foreground sm:inline-flex">
+          <UploadCloud className="size-3.5 text-primary" />
           {status}
         </span>
       )}
